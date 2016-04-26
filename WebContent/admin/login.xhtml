@@ -1,0 +1,46 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:p="http://primefaces.org/ui"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:f="http://java.sun.com/jsf/core"
+	xmlns:c="http://java.sun.com/jsp/jstl/core"
+	xmlns:pe="http://primefaces.org/ui/extensions">
+
+<h:head>
+	<style type="text/css">
+.panelGridCenter {
+	margin: 0 auto;
+}
+</style>
+</h:head>
+<h:body>
+	<h:form prependId="false">
+		<p:layout fullPage="true" id="allLayout">
+			<p:layoutUnit position="center">
+				<p:growl id="growl" sticky="true" showDetail="true" life="3000" />
+				<p:panel header="Login"
+					style="width: 360px; display:block; text-align:center; height:80% top:25%"
+					styleClass="panelGridCenter">
+
+					<h:panelGrid columns="2" cellpadding="5">
+						<h:outputLabel for="username" value="Username:" />
+						<p:inputText id="username" value="#{loginController.username}"
+							required="true" label="username" />
+
+						<h:outputLabel for="password" value="Password:" />
+						<p:password id="password" value="#{loginController.password}"
+							required="true" label="password" />
+
+						<f:facet name="footer">
+							<p:commandButton value="Login" update="growl" ajax="false"
+								actionListener="#{loginController.login}" />
+						</f:facet>
+					</h:panelGrid>
+				</p:panel>
+			</p:layoutUnit>
+		</p:layout>
+	</h:form>
+</h:body>
+</html>

@@ -1,0 +1,149 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://java.sun.com/jsf/facelets"
+    xmlns:h="http://java.sun.com/jsf/html"
+    xmlns:p="http://primefaces.org/ui"
+    xmlns:f="http://java.sun.com/jsf/core"
+    template="/template/template.xhtml">
+
+ <ui:define name="content">
+	<p:growl id="messages" showDetail="true" />
+
+		<div style="width: 100%;">
+			<div style="float: left; width: 17%">
+				<ul>
+					<li><a class="active" href="#home">Common Tables</a></li>
+					<li><a href="#">Compare JPEG/PDF's</a></li>
+					<li><a href="#">Data Entry</a></li>
+					<li><a href="#">Image Proofing</a></li>
+					
+					<li><a href="#">Data Entry</a></li>
+					<li><a href="#">Image Proofing</a></li>
+					<li><a href="#">Lowes Images</a></li>
+					<li><a href="#">PDF File Import</a></li>
+					
+					<li><a href="#">Part Number Add</a></li>
+					<li><a href="#">Proofsheets</a></li>
+					<li><a href="#">Lowes Images</a></li>
+					<li><a href="#">Root/Var Accessories</a></li>
+					<li><a href="#">Unicode Data Entry</a></li>
+					<li><a href="#">Administration</a></li>
+				</ul>
+			</div>
+			<div style="float: left;  width: 83%">
+				<h3>
+				<p:outputLabel value="Part Number Add - Step 1 - Import Excel Spreadsheet"></p:outputLabel>
+				</h3>
+				<h:form enctype="multipart/form-data" prependId="false">
+					<h:panelGrid columns="2">
+						<p:outputLabel value="File To Import"></p:outputLabel>
+						<p:fileUpload value="#{fileUploadView.file}" mode="simple" allowTypes="/(\.|\/)(xlsx)$/" />
+						
+						<p:outputLabel value="Location"></p:outputLabel>
+						<p:selectOneMenu id="country" value="#{fileUploadView.schemaName}" style="width:150px">
+			       			<f:selectItem itemLabel="PUNI" itemValue="PUNI" selected="true"/>
+			       			<f:selectItem itemLabel="PCEN" itemValue="PCEN" />
+			             </p:selectOneMenu>
+					</h:panelGrid>
+					<div >	
+						<p:commandButton value="Submit" ajax="false" actionListener="#{fileUploadView.upload}" oncomplete="drawTable()"/>
+					</div>
+					<h:inputHidden id="jsonString" value="#{fileUploadView.jsonValue}"></h:inputHidden>
+					<p:dataTable var="item" value="#{fileUploadView.items}">
+					    <p:column headerText="Item Id">
+					        <h:outputText value="#{item.itemName}" />
+					    </p:column>
+					 
+					    <p:column headerText="Item Type">
+					        <h:outputText value="#{item.itemType}" />
+					    </p:column>
+					    
+					    <p:column headerText="Parent">
+					        <h:outputText value="#{item.parentId}" />
+					    </p:column>
+					 
+					    <p:column headerText="Status Level" sortBy="#{item.statusLevel}">
+					        <h:outputText value="#{item.statusLevel}" />
+					    </p:column>
+					 
+					    <p:column headerText="Status Message" sortBy="#{item.statusMessage}">
+					        <h:outputText value="#{item.statusMessage}" />
+					    </p:column>
+					</p:dataTable>
+				</h:form>
+				
+				
+			
+			<div id="msg"></div>
+			
+			</div>
+			<script type="text/javascript">
+			jQuery(document).ready(function() {
+	    		//drawTable()
+	    	    });
+	function drawTable() {
+		alert("draw table");
+		var data = jQuery('#jsonString').val(); 
+		data = jQuery.parseJSON(data);
+			
+	/* 	jQuery.each(data, function(index, element) {
+			
+			 $('#msg').append(jQuery('<tr><td>', {
+	                text: element.itemInfoId + '</td><td>' +
+	                text: element.itemType + '</td><td>' +
+	                text: element.statusId + '</td><td>' +
+	                text: element.statusLevel + '</td><td>' +
+	                text: element.statusMessage + '</td></tr>' 
+	            }));
+		
+		}); */
+		/* jQuery.each(data, function(index, element) {
+			
+			 $('#msg').append($('<div>', {
+	                text: element.itemInfoId
+	            }));
+			 $('#msg').append($('</div><div>', {
+	                text: element.itemType
+	            }));
+			 $('#msg').append($('</div><div>', {
+	                text: element.statusId
+	            }));
+			 $('#msg').append($('</div><div>', {
+	                text: element.statusLevel
+	            }));
+			 $('#msg').append($('</div>', {
+	                text: element.statusMessage
+	            }));
+			
+        });
+		 */
+	//	jQuery.each(data, function(index, element) {
+			
+		/* 	var row = $("<tr />")
+		   	jQuery("#itemTable").append(row); 
+			row.append(jQuery("<td>" + {text: data.itemInfoId }+ "</td>"));
+		    row.append(jQuery("<td>" + {text: data.itemType }+ "</td>"));
+		    row.append(jQuery("<td>" + {text: data.statusId }+ "</td>"));
+		    row.append(jQuery("<td>" + {text: data.statusLevel }+ "</td>"));
+		    row.append(jQuery("<td>" + {text: data.statusMessage }+ "</td>")); */
+		   /*  row.append(jQuery("<td>" + data.itemInfoId + "</td>"));
+		    row.append(jQuery("<td>" + data.itemType + "</td>"));
+		    row.append(jQuery("<td>" + data.statusId + "</td>"));
+		    row.append(jQuery("<td>" + data.statusLevel + "</td>"));
+		    row.append(jQuery("<td>" + data.statusMessage + "</td>")); */
+			
+    //   });
+		
+	}
+	
+	
+	</script>
+			
+			
+		</div>
+		<div style="clear: both"></div>
+
+
+
+		
+ </ui:define>
+ </ui:composition>
