@@ -1,5 +1,6 @@
 package com.probosys.fileupload.service;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -9,18 +10,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Map.Entry;
-
-import org.json.JSONArray;
+import org.apache.log4j.Logger;
 import org.json.JSONObject;
-import org.primefaces.model.UploadedFile;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
-
-import com.google.gson.Gson;
 import com.probosys.fileupload.model.Action;
 import com.probosys.fileupload.model.DataWrapper;
 import com.probosys.fileupload.model.Item;
@@ -29,36 +26,25 @@ import com.probosys.fileupload.model.PimPojo;
 import com.probosys.fileupload.model.Schema;
 
 public class FileUploadService {
-	final String SERVER_URI = "http://localhost:8180/persistence-0.1/pim/postItems/PUNI";
-	final String SERVER_URI_II = "http://localhost:8180/persistence-0.1/pim/postItemGroups/PUNI";
 
-	Properties prop = new Properties();
-
-	InputStream input = null;
-
+	private static final Logger logger = Logger.getLogger(FileUploadService.class);
 	
-
-	private UploadedFile file;
-
+	Properties prop = new Properties();
+	InputStream input = null;
 	private String schemaName;
-
-	private String jsonValue;
-
-	private List<Item> items;
 	
 	public FileUploadService(){
 		try {
-			input = getClass().getClassLoader().getResourceAsStream("pim.properties");
-			prop.load(input);
+			String propPath = System.getProperty( "cpdb.properties" );
+			logger.debug("Loading FileuploadService propath"+propPath);
+			prop.load(new FileInputStream(propPath+"pim.properties"));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			System.out.println("Error when loading properties file"+e.getMessage());
+			logger.error("Error when loading properties file"+e.getMessage());
 		}
 	}
 
 	public Map getRequestJsonMap(List<PimPojo> inputFileList) {
-		Gson gson = new Gson();
-		ResponseEntity<String> loginResponse = null;
 		// Parents
 		Map<String, List<PimPojo>> pimPojos = new HashMap<>();
 		List<PimPojo> pojos = null;
@@ -172,7 +158,7 @@ public class FileUploadService {
 			else 
 				postUrl = prop.getProperty("pcenItemUrl"); 
 			// send request and parse result
-			System.out.println ("posturl"+postUrl);
+			logger.debug ("posturl"+postUrl);
 			itemInfoResponse = restTemplate.exchange(postUrl,
 					HttpMethod.POST, entity, String.class);
 			return itemInfoResponse;
@@ -254,7 +240,7 @@ public class FileUploadService {
 			}
 
 		} catch (Exception ex) {
-			System.out.println("exception" + ex.getMessage());
+			logger.error("exception parseItemInfojson" + ex.getMessage());
 			return null;
 		} finally {
 
@@ -314,7 +300,7 @@ public class FileUploadService {
 
 			// }
 		} catch (Exception ex) {
-			System.out.println("exception" + ex.getMessage());
+			logger.error("exception parseItemHierJSON" + ex.getMessage());
 			return null;
 		} finally {
 

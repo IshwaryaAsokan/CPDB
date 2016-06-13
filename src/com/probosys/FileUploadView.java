@@ -73,20 +73,23 @@ public class FileUploadView {
 					//Parse the json and convert to items list
 					Map<String,JSONObject> requestJsons = fileUploadService.getRequestJsonMap(inpItems);
 					
-					// Sending webservice calls to itemhierarchy and iteminfo
-					ResponseEntity<?> response = fileUploadService.getItemHierResponse(requestJsons.get("itemHierJson"), schemaName);
-					if ((response.getStatusCode().toString()).equals("200")) {
-						items.addAll(fileUploadService.parseItemHierJSON(String.valueOf(response.getBody())));
+					// Inserting items first and then their hierarchies
+					ResponseEntity<?> response1 = fileUploadService.getItemInfoResponse(requestJsons.get("itemInfoJson"), schemaName);
+					if ((response1.getStatusCode().toString()).equals("200")) {
+					items.addAll(fileUploadService.parseItemInfoJson(String.valueOf(response1.getBody())));
 					} else {
-						throw new HttpClientErrorException(response.getStatusCode(), (String) response.getBody());
+						throw new HttpClientErrorException(response1.getStatusCode(), (String) response1.getBody());
 					}
-					ResponseEntity<?> response2 = fileUploadService.getItemInfoResponse(requestJsons.get("itemInfoJson"), schemaName);
+					
+					ResponseEntity<?> response2 = fileUploadService.getItemHierResponse(requestJsons.get("itemHierJson"), schemaName);
 					if ((response2.getStatusCode().toString()).equals("200")) {
-					items.addAll(fileUploadService.parseItemInfoJson(String.valueOf(response2.getBody())));
+						items.addAll(fileUploadService.parseItemHierJSON(String.valueOf(response2.getBody())));
 					} else {
 						throw new HttpClientErrorException(response2.getStatusCode(), (String) response2.getBody());
+
 					}
-					jsonValue =(String) response.toString()+ (String) response2.toString();
+				
+					jsonValue =(String) response2.toString()+ (String) response1.toString();
 					Collections.sort(items, Item.statusComparator);
 					
 					getSessionMap().put("itemsValue", items);
@@ -103,9 +106,6 @@ public class FileUploadView {
 		} catch (IOException e) {
 			e.printStackTrace();
 			message = new FacesMessage(FacesMessage.SEVERITY_ERROR, "FileUpload Error", "File Processing Error"+e.getMessage());
-		} catch (HttpClientErrorException e) {
-			e.printStackTrace();
-			message = new FacesMessage(FacesMessage.SEVERITY_ERROR, "FileUpload Error", "Unable to connect to Rest Server"+e.getMessage());
 		} catch(RuntimeException re){
 			message = new FacesMessage(FacesMessage.SEVERITY_ERROR, "FileUpload Error", re.getMessage());
 		} catch (Exception e) {
