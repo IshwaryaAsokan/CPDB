@@ -1,14 +1,10 @@
 package com.probosys;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
 
 import javax.annotation.PostConstruct;
 import javax.faces.application.FacesMessage;
@@ -16,25 +12,13 @@ import javax.faces.bean.ManagedBean;
 import javax.faces.context.ExternalContext;
 import javax.faces.context.FacesContext;
 
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.json.JSONObject;
 import org.primefaces.model.UploadedFile;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
-
-import com.google.gson.Gson;
 import com.probosys.file.utils.FileUtils;
-import com.probosys.fileupload.model.Action;
-import com.probosys.fileupload.model.DataWrapper;
 import com.probosys.fileupload.model.Item;
-import com.probosys.fileupload.model.Parent;
 import com.probosys.fileupload.model.PimPojo;
-import com.probosys.fileupload.model.Schema;
 import com.probosys.fileupload.service.FileUploadService;
 
 @ManagedBean
@@ -43,74 +27,103 @@ public class FileUploadView {
 	private UploadedFile file;
 
 	private String schemaName;
-	
+
 	private String jsonValue;
-	
-	private List<Item> items =  new ArrayList<Item>();
-	
+
+	private String uploadType;
+
+	private List<Item> items = new ArrayList<Item>();
+
 	@PostConstruct
 	public void init() {
-		items=	getSessionMap().get("itemsValue") != null ? (List<Item>) getSessionMap().get("itemsValue") :  new ArrayList<Item>();
+		items = getSessionMap().get("itemsValue") != null ? (List<Item>) getSessionMap()
+				.get("itemsValue") : new ArrayList<Item>();
 	}
 
 	public void upload() {
 		FacesMessage message = null;
 		try {
 			if (file != null) {
-				message = new FacesMessage("Succesful", file.getFileName() + " is uploaded.");
-				// FacesContext.getCurrentInstance().addMessage(null, message);
+				message = new FacesMessage("Succesful", file.getFileName()
+						+ " is uploaded.");
 				List<PimPojo> inpItems = new ArrayList<PimPojo>();
-				/*if(! "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet".equals(file.getContents())){
-					throw new RuntimeException("Invalid File Type. Only xlxs file are allowed for uploading.");
-				}*/
-				
-				items= new ArrayList<Item>();
-				
-				inpItems = FileUtils.readXslsFile(file.getInputstream());
-				
-				if (inpItems != null) {
-					FileUploadService fileUploadService = new FileUploadService();
-					//Parse the json and convert to items list
-					Map<String,JSONObject> requestJsons = fileUploadService.getRequestJsonMap(inpItems);
-					
-					// Inserting items first and then their hierarchies
-					ResponseEntity<?> response1 = fileUploadService.getItemInfoResponse(requestJsons.get("itemInfoJson"), schemaName);
-					if ((response1.getStatusCode().toString()).equals("200")) {
-					items.addAll(fileUploadService.parseItemInfoJson(String.valueOf(response1.getBody())));
-					} else {
-						throw new HttpClientErrorException(response1.getStatusCode(), (String) response1.getBody());
-					}
-					
-					ResponseEntity<?> response2 = fileUploadService.getItemHierResponse(requestJsons.get("itemHierJson"), schemaName);
-					if ((response2.getStatusCode().toString()).equals("200")) {
-						items.addAll(fileUploadService.parseItemHierJSON(String.valueOf(response2.getBody())));
-					} else {
-						throw new HttpClientErrorException(response2.getStatusCode(), (String) response2.getBody());
+								items = new ArrayList<Item>();
+				ResponseEntity<?> csResponse = null;
+				FileUploadService fileUploadService = new FileUploadService();
+				ResponseEntity<?> response2 = null;
 
+				if (uploadType.equals("C"))
+					inpItems = FileUtils.readCSXlFile(file.getInputstream());
+				else
+					inpItems = FileUtils.readXslsFile(file.getInputstream());
+
+				if (inpItems != null) {
+					// Parse the json and convert to items list
+
+					if (uploadType.equals("P")) {//Parse the json and convert to items list
+						Map<String,JSONObject> requestJsons = fileUploadService.getRequestJsonMap(inpItems);
+						
+						// Sending webservice calls to itemhierarchy and iteminfo
+						ResponseEntity<?> response = fileUploadService.getItemHierResponse(requestJsons.get("itemHierJson"), schemaName);
+						if ((response.getStatusCode().toString()).equals("200")) {
+							items.addAll(fileUploadService.parseItemHierJSON(String.valueOf(response.getBody())));
+						} else {
+							throw new HttpClientErrorException(response.getStatusCode(), (String) response.getBody());
+						}
+						response2 = fileUploadService.getItemInfoResponse(requestJsons.get("itemInfoJson"), schemaName);
+						if ((response2.getStatusCode().toString()).equals("200")) {
+						items.addAll(fileUploadService.parseItemInfoJson(String.valueOf(response2.getBody())));
+						} else {
+							throw new HttpClientErrorException(response2.getStatusCode(), (String) response2.getBody());
+						}
+							if ((response2.getStatusCode().toString())
+								.equals("200")) {
+							items.addAll(fileUploadService
+									.parseItemInfoJson(String.valueOf(response2
+											.getBody())));
+						} else {
+							throw new HttpClientErrorException(
+									response2.getStatusCode(),
+									(String) response2.getBody());
+						}
+					} else {
+						Map<String, JSONObject> requestJsons = fileUploadService
+								.getCSRequestJsonMap(inpItems);
+						
+						csResponse = fileUploadService .getCSResponse(requestJsons.get("csItemInfoJson"), schemaName);
+			
 					}
-				
-					jsonValue =(String) response2.toString()+ (String) response1.toString();
+					jsonValue = (String) csResponse.toString();
 					Collections.sort(items, Item.statusComparator);
-					
+
 					getSessionMap().put("itemsValue", items);
-					
-					
-					
+
 				} else {
-					message = new FacesMessage(FacesMessage.SEVERITY_ERROR, "FileUpload Error",
+					message = new FacesMessage(FacesMessage.SEVERITY_ERROR,
+							"FileUpload Error",
 							"Empty Response from Rest Server.");
 				}
 			} else {
-				message = new FacesMessage(FacesMessage.SEVERITY_ERROR, "FileUpload Error", "Kindly Upload File");
+				message = new FacesMessage(FacesMessage.SEVERITY_ERROR,
+						"FileUpload Error", "Kindly Upload File");
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
-			message = new FacesMessage(FacesMessage.SEVERITY_ERROR, "FileUpload Error", "File Processing Error"+e.getMessage());
-		} catch(RuntimeException re){
-			message = new FacesMessage(FacesMessage.SEVERITY_ERROR, "FileUpload Error", re.getMessage());
+			message = new FacesMessage(FacesMessage.SEVERITY_ERROR,
+					"FileUpload Error", "File Processing Error"
+							+ e.getMessage());
+		} catch (HttpClientErrorException e) {
+			e.printStackTrace();
+			message = new FacesMessage(FacesMessage.SEVERITY_ERROR,
+					"FileUpload Error", "Unable to connect to Rest Server"
+							+ e.getMessage());
+		} catch (RuntimeException re) {
+			message = new FacesMessage(FacesMessage.SEVERITY_ERROR,
+					"FileUpload Error", re.getMessage());
 		} catch (Exception e) {
 			e.printStackTrace();
-			message = new FacesMessage(FacesMessage.SEVERITY_ERROR, "Loggin Error", "Unable to connect to Rest Server");
+			message = new FacesMessage(FacesMessage.SEVERITY_ERROR,
+					"Loggin Error", "Unable to connect to Rest Server");
 		}
 		FacesContext.getCurrentInstance().addMessage(null, message);
 	}
@@ -147,12 +160,20 @@ public class FileUploadView {
 		this.items = items;
 	}
 	
-	private Map<String, Object> getSessionMap(){
-		ExternalContext externalContext = FacesContext.getCurrentInstance().getExternalContext();
-		  Map<String, Object> sessionMap = externalContext.getSessionMap();
-		  return sessionMap;
+
+	public String getUploadType() {
+		return uploadType;
 	}
-	
-	
+
+	public void setUploadType(String uploadType) {
+		this.uploadType = uploadType;
+	}
+
+	private Map<String, Object> getSessionMap() {
+		ExternalContext externalContext = FacesContext.getCurrentInstance()
+				.getExternalContext();
+		Map<String, Object> sessionMap = externalContext.getSessionMap();
+		return sessionMap;
+	}
 
 }

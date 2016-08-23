@@ -5,9 +5,6 @@
 	<artifactId>SpringRestClientApp</artifactId>
 	<version>1.0.0</version>
 	<packaging>war</packaging>
-	<properties>
-  	 <propPath>${cpdb.properties}</propPath>
-	</properties>
 
 	<dependencies>
 		<dependency>
@@ -20,21 +17,7 @@
 			<artifactId>primefaces-extensions</artifactId>
 			<version>4.0.0</version>
 		</dependency>
-			<!-- from java.util.logging to log4j -->
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>jul-to-slf4j</artifactId>
-			<version>1.7.7</version>
-		</dependency>
- 
-		<!-- it help to get slf4j and log4j -->
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
-			<version>1.7.7</version>
-		</dependency>
 		
-
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-aop</artifactId>
@@ -75,11 +58,11 @@
 			<artifactId>spring-orm</artifactId>
 			<version>4.2.1.RELEASE</version>
 		</dependency>
-		    <dependency>
-		<groupId>org.json</groupId>
-		<artifactId>json</artifactId>
-		<version>20160212</version>
-	</dependency>
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20160212</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-test</artifactId>
@@ -134,8 +117,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.3</version>
 				<configuration>
-					<source>1.7</source>
-					<target>1.7</target>
+					<source>1.8</source>
+					<target>1.8</target>
 				</configuration>
 			</plugin>
 			<plugin>

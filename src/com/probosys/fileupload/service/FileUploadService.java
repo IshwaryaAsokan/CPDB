@@ -1,23 +1,28 @@
 package com.probosys.fileupload.service;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Map.Entry;
-import org.apache.log4j.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.json.JSONObject;
+import org.primefaces.model.UploadedFile;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
+
+import com.google.gson.Gson;
 import com.probosys.fileupload.model.Action;
 import com.probosys.fileupload.model.DataWrapper;
 import com.probosys.fileupload.model.Item;
@@ -26,25 +31,75 @@ import com.probosys.fileupload.model.PimPojo;
 import com.probosys.fileupload.model.Schema;
 
 public class FileUploadService {
+	final String SERVER_URI = "http://localhost:8180/persistence-0.1/pim/postItems/PUNI";
+	final String SERVER_URI_II = "http://localhost:8180/persistence-0.1/pim/postItemGroups/PUNI";
+	final String SERVER_URI_CS = "http://localhost:8180/persistence-0.1/pim/postCSItems/PUNI";
 
-	private static final Logger logger = Logger.getLogger(FileUploadService.class);
-	
 	Properties prop = new Properties();
+
 	InputStream input = null;
+
+
+
+	private UploadedFile file;
+
 	private String schemaName;
+
+	private String jsonValue;
+
+	private List<Item> items;
 	
 	public FileUploadService(){
 		try {
-			String propPath = System.getProperty( "cpdb.properties" );
-			logger.debug("Loading FileuploadService propath"+propPath);
-			prop.load(new FileInputStream(propPath+"pim.properties"));
+			input = getClass().getClassLoader().getResourceAsStream("pim.properties");
+			prop.load(input);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			logger.error("Error when loading properties file"+e.getMessage());
+			System.out.println("Error when loading properties file"+e.getMessage());
 		}
 	}
 
+
+	public Map<String, JSONObject> getCSRequestJsonMap(List<PimPojo> inputFileList) {
+
+		JSONObject requestJsonCSItemInfo = new JSONObject();	
+		
+		// The records from excel have a hierarchy of Actions -> Parents -> CrossSellingType -> Children. Sorting below based on this order
+		Comparator<PimPojo> groupByComparator = Comparator.comparing(PimPojo::getAction).thenComparing(PimPojo::getParent)
+				.thenComparing(PimPojo::getCrossSellType).thenComparing(PimPojo::getCrossSellChild);
+	
+		inputFileList.sort(groupByComparator);
+
+		// Converting list to a stream of model classes allow using collectors 
+		Stream<PimPojo> records = inputFileList.stream();
+
+		// Collectors groupingby generates a complex nested map based on the provided JSON schema
+		Map<String, Map<String, Map<String, List<String>>>> map = records.collect(Collectors.groupingBy(PimPojo::getAction, Collectors
+						.groupingBy(PimPojo::getParent, Collectors.groupingBy(PimPojo::getCrossSellType, 
+								Collectors.mapping(PimPojo::childValue,Collectors.toList())))));
+		
+					
+		// Using Gson, the java map is made as a json supported map to add to request object
+		Map<String,Object> actions = new Gson().fromJson(new JSONObject(map).toString(), HashMap.class); 
+		
+		// Build request json for all actions A,M,D
+		// 3 action maps are appended to json obj - requestJsonCSItemInfo
+		for(Entry<String, Object> itr : actions.entrySet()){
+			requestJsonCSItemInfo.append("request",(new JSONObject().accumulate(itr.getKey(), actions.get(itr.getKey()))));
+		}
+		
+		// Place requests in a map 	// TO DO need to check real need of a map here
+		Map<String, JSONObject> requestJsonMap = new HashMap<String, JSONObject>();
+		requestJsonMap.put("csItemInfoJson", requestJsonCSItemInfo);
+		
+		return requestJsonMap;
+	
+	}
+
+	
 	public Map getRequestJsonMap(List<PimPojo> inputFileList) {
+		Gson gson = new Gson();
+		ResponseEntity<String> loginResponse = null;
 		// Parents
 		Map<String, List<PimPojo>> pimPojos = new HashMap<>();
 		List<PimPojo> pojos = null;
@@ -141,6 +196,33 @@ public class FileUploadService {
 		return requestJsonMap;
 	}
 
+	public ResponseEntity getCSResponse(JSONObject json,String schema) throws Exception {
+		// Sending request for itemHierarchies
+		String itemJsonStr = json.toString();
+		String postUrl = null;
+
+		ResponseEntity<String> csResponse = null;
+		if (itemJsonStr != null) {
+			RestTemplate restTemplate = new RestTemplate();
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_JSON);
+			HttpEntity<String> entity = new HttpEntity<String>(itemJsonStr,
+					headers);
+			if(schema.equals("PUNI"))
+				postUrl = prop.getProperty("puniItemUrl"); 
+			else 
+				postUrl = prop.getProperty("pcenItemUrl"); 
+			// send request and parse result
+			System.out.println ("posturl"+postUrl);
+			csResponse = restTemplate.exchange(postUrl,
+					HttpMethod.POST, entity, String.class);
+			return csResponse;
+		} else {
+			return null;
+		}
+
+	}
+	
 	public ResponseEntity getItemInfoResponse(JSONObject json,String schema) throws Exception {
 		// Sending request for itemHierarchies
 		String itemJsonStr = json.toString();
@@ -158,7 +240,7 @@ public class FileUploadService {
 			else 
 				postUrl = prop.getProperty("pcenItemUrl"); 
 			// send request and parse result
-			logger.debug ("posturl"+postUrl);
+			System.out.println ("posturl"+postUrl);
 			itemInfoResponse = restTemplate.exchange(postUrl,
 					HttpMethod.POST, entity, String.class);
 			return itemInfoResponse;
@@ -240,7 +322,7 @@ public class FileUploadService {
 			}
 
 		} catch (Exception ex) {
-			logger.error("exception parseItemInfojson" + ex.getMessage());
+			System.out.println("exception" + ex.getMessage());
 			return null;
 		} finally {
 
@@ -300,7 +382,7 @@ public class FileUploadService {
 
 			// }
 		} catch (Exception ex) {
-			logger.error("exception parseItemHierJSON" + ex.getMessage());
+			System.out.println("exception" + ex.getMessage());
 			return null;
 		} finally {
 
