@@ -2,7 +2,10 @@ package com.probosys.fileupload.service;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -10,9 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.primefaces.model.UploadedFile;
 import org.springframework.http.HttpEntity;
@@ -22,10 +27,18 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import com.probosys.fileupload.model.Action;
 import com.probosys.fileupload.model.DataWrapper;
 import com.probosys.fileupload.model.Item;
+import com.probosys.fileupload.model.ItemInfo;
+import com.probosys.fileupload.model.ItemLinkTypes;
+import com.probosys.fileupload.model.ItemLinks;
 import com.probosys.fileupload.model.Parent;
 import com.probosys.fileupload.model.PimPojo;
 import com.probosys.fileupload.model.Schema;
@@ -39,8 +52,6 @@ public class FileUploadService {
 
 	InputStream input = null;
 
-
-
 	private UploadedFile file;
 
 	private String schemaName;
@@ -48,55 +59,268 @@ public class FileUploadService {
 	private String jsonValue;
 
 	private List<Item> items;
-	
-	public FileUploadService(){
+
+	public FileUploadService() {
 		try {
-			input = getClass().getClassLoader().getResourceAsStream("pim.properties");
+			input = getClass().getClassLoader().getResourceAsStream(
+					"pim.properties");
 			prop.load(input);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			System.out.println("Error when loading properties file"+e.getMessage());
+			System.out.println("Error when loading properties file"
+					+ e.getMessage());
 		}
 	}
 
+	private static List<ItemLinks> getCSLinks(List<PimPojo> inputFileList) {
 
-	public Map<String, JSONObject> getCSRequestJsonMap(List<PimPojo> inputFileList) {
+		List<ItemLinks> list = new ArrayList<ItemLinks>();
+		ItemLinks link = null;
 
-		JSONObject requestJsonCSItemInfo = new JSONObject();	
-		
-		// The records from excel have a hierarchy of Actions -> Parents -> CrossSellingType -> Children. Sorting below based on this order
-		Comparator<PimPojo> groupByComparator = Comparator.comparing(PimPojo::getAction).thenComparing(PimPojo::getParent)
-				.thenComparing(PimPojo::getCrossSellType).thenComparing(PimPojo::getCrossSellChild);
-	
+		for (PimPojo obj : inputFileList) {
+			link = new ItemLinks();
+			link.setParent(obj.getParent());
+			link.setCrossSellType(obj.getCrossSellType());
+			link.setItemLinkText(obj.getChild());
+			link.setAction(obj.getAction());
+			list.add(link);
+		}
+
+		return list;
+	}
+
+	public static void main(String[] args) throws JsonGenerationException,
+			JsonMappingException, IOException {
+
+		List<PimPojo> inputFileList = new ArrayList<PimPojo>();
+		PimPojo p = new PimPojo("6955C", "1251K", "AvailableFinish", "A");
+		inputFileList.add(p);
+
+		p = new PimPojo("6955C", "1252K", "AvailableFinish", "A");
+		inputFileList.add(p);
+
+		p = new PimPojo("6955C", "1253K", "AvailableFinish", "M");
+		inputFileList.add(p);
+
+		p = new PimPojo("6959C", "456465", "PairsWellWith", "M");
+		inputFileList.add(p);
+
+		JSONObject requestJsonCSItemInfo = new JSONObject();
+
+		ItemLinks links = new ItemLinks();
+		ItemInfo info = new ItemInfo();
+		List<ItemLinks> listLinks = new ArrayList<ItemLinks>();
+		List<ItemInfo> listInfo = new ArrayList<ItemInfo>();
+
+		// The records from excel have a hierarchy of Actions -> Parents ->
+		// CrossSellingType -> Children. Sorting below based on this order
+		Comparator<PimPojo> groupByComparator = Comparator
+				.comparing(PimPojo::getAction)
+				.thenComparing(PimPojo::getParent)
+				.thenComparing(PimPojo::getCrossSellType)
+				.thenComparing(PimPojo::getChild);
+
 		inputFileList.sort(groupByComparator);
 
-		// Converting list to a stream of model classes allow using collectors 
-		Stream<PimPojo> records = inputFileList.stream();
+		listLinks = getCSLinks(inputFileList);
 
-		// Collectors groupingby generates a complex nested map based on the provided JSON schema
-		Map<String, Map<String, Map<String, List<String>>>> map = records.collect(Collectors.groupingBy(PimPojo::getAction, Collectors
-						.groupingBy(PimPojo::getParent, Collectors.groupingBy(PimPojo::getCrossSellType, 
-								Collectors.mapping(PimPojo::childValue,Collectors.toList())))));
-		
-					
-		// Using Gson, the java map is made as a json supported map to add to request object
-		Map<String,Object> actions = new Gson().fromJson(new JSONObject(map).toString(), HashMap.class); 
-		
-		// Build request json for all actions A,M,D
-		// 3 action maps are appended to json obj - requestJsonCSItemInfo
-		for(Entry<String, Object> itr : actions.entrySet()){
-			requestJsonCSItemInfo.append("request",(new JSONObject().accumulate(itr.getKey(), actions.get(itr.getKey()))));
-		}
-		
-		// Place requests in a map 	// TO DO need to check real need of a map here
+		// Converting list to a stream of model classes allow using collectors
+		Stream<ItemLinks> recordsCS = listLinks.stream();
+
+		// NEW RE DESIGN
+
+		Map<String, List<ItemLinks>> actions = recordsCS.collect(Collectors
+				.groupingBy(ItemLinks::getAction));
+
+		List<ItemLinks> masterList = new ArrayList<>();
+
+		Gson gson = new GsonBuilder().create();
+		String json = gson.toJson(masterList);
+
+		Type mapType = new TypeToken<List<ItemLinks>>() {
+		}.getType();
+		JSONArray JSONArray = new JSONArray(masterList);
+
+		String element = new Gson().toJson(masterList,
+				new TypeToken<ArrayList<ItemLinks>>() {
+				}.getType());
+
+		// JSONObject obj = new JSONObject(element);
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		StringWriter stringWriter = new StringWriter();
+		objectMapper.writeValue(stringWriter, masterList);
+
+		System.out.println(stringWriter);
+		String arrayToJson = objectMapper.writeValueAsString(masterList);
+
 		Map<String, JSONObject> requestJsonMap = new HashMap<String, JSONObject>();
-		requestJsonMap.put("csItemInfoJson", requestJsonCSItemInfo);
-		
-		return requestJsonMap;
-	
+
+		// System.out.println("Soo");
+
 	}
 
-	
+	private List<ItemLinks> buildCSList(Map<String, List<ItemLinks>> actions){
+		
+		List<ItemLinks> masterList = new ArrayList<ItemLinks>();
+		
+		List<ItemLinks> parentsList = new ArrayList<>();
+		List<ItemLinks> csList = new ArrayList<>();
+
+		ItemLinks itemObj = new ItemLinks();
+		ItemInfo ii = new ItemInfo();
+
+		for (String aItr : actions.keySet()) {
+
+			parentsList = actions.get(aItr);
+			Map<String, List<ItemLinks>> parents = parentsList.stream()
+					.collect(Collectors.groupingBy(ItemLinks::getParent));
+
+			for (String pItr : parents.keySet()) {
+
+				csList = parents.get(pItr);
+				Map<String, Map<String, List<ItemLinks>>> parentsFinalMap = csList
+						.stream()
+						.collect(
+								Collectors
+										.groupingBy(
+												ItemLinks::getParent,
+												Collectors
+														.groupingBy(ItemLinks::getCrossSellType)));
+
+				for (String cItr : parentsFinalMap.keySet()) {
+
+					itemObj = new ItemLinks();
+					System.out.println(cItr);
+
+					itemObj.setParent(cItr);
+					Map<String, List<ItemLinks>> csKeyMap = parentsFinalMap
+							.get(cItr);
+
+					// itemObj.setAction(csK);
+					List<ItemInfo> iiList = new ArrayList<ItemInfo>();
+					List<ItemLinkTypes> iltList = new ArrayList<>();
+
+					for (String childItr : csKeyMap.keySet()) {
+						ii = new ItemInfo();
+
+						List<ItemLinks> childList = csKeyMap.get(childItr);
+						ItemLinkTypes csType = new ItemLinkTypes();
+
+						csType.setItemLinkType(childItr);
+
+						for (ItemLinks ilink : childList) {
+
+							ii = new ItemInfo();
+							ii.setItemName(ilink.getItemLinkText());
+							iiList.add(ii);
+						}
+
+						itemObj.setAction(childList.get(0).getAction());
+
+						csType.setItemInfoList(iiList);
+						iltList.add(csType);
+
+					}
+					itemObj.setCsTypesList(iltList);
+					masterList.add(itemObj);
+
+				}
+			}
+		}
+		return masterList;
+	}
+	public Map<String, JSONObject> getCSRequestJsonMap(
+			List<PimPojo> inputFileList) {
+
+		JSONObject requestJsonCSItemInfo = new JSONObject();
+
+		ItemLinks links = new ItemLinks();
+		ItemInfo info = new ItemInfo();
+		List<ItemLinks> listLinks = new ArrayList<ItemLinks>();
+		List<ItemInfo> listInfo = new ArrayList<ItemInfo>();
+
+		// The records from excel have a hierarchy of Actions -> Parents ->
+		// CrossSellingType -> Children. Sorting below based on this order
+		Comparator<PimPojo> groupByComparator = Comparator
+				.comparing(PimPojo::getAction)
+				.thenComparing(PimPojo::getParent)
+				.thenComparing(PimPojo::getCrossSellType)
+				.thenComparing(PimPojo::getCrossSellChild);
+
+		inputFileList.sort(groupByComparator);
+
+		listLinks = getCSLinks(inputFileList);
+
+		// Converting list to a stream of model classes allow using collectors
+		Stream<ItemLinks> recordsCS = listLinks.stream();
+
+		// OLD DESIGN
+		/*
+		 * Stream<PimPojo> records = inputFileList.stream();
+		 * 
+		 * // Collectors groupingby generates a complex nested map based on the
+		 * // provided JSON schema Map<String, Map<String, Map<String,
+		 * List<String>>>> map = records
+		 * .collect(Collectors.groupingBy(PimPojo::getAction, Collectors
+		 * .groupingBy(PimPojo::getParent, Collectors.groupingBy(
+		 * PimPojo::getCrossSellType, Collectors.mapping( PimPojo::childValue,
+		 * Collectors.toList())))));
+		 * 
+		 * Map<String, Object> actions = new Gson().fromJson( new
+		 * JSONObject(map).toString(), HashMap.class);
+		 * 
+		 * // Build request json for all actions A,M,D // 3 action maps are
+		 * appended to json obj - requestJsonCSItemInfo for (Entry<String,
+		 * Object> itr : actions.entrySet()) { requestJsonCSItemInfo.append(
+		 * "request", (new JSONObject().accumulate(itr.getKey(),
+		 * actions.get(itr.getKey())))); }
+		 */
+
+		// NEW RE DESIGN
+
+		Map<String, List<ItemLinks>> actions = recordsCS.collect(Collectors
+				.groupingBy(ItemLinks::getAction));
+
+		List<ItemLinks> masterList = new ArrayList<>();
+				
+		masterList = buildCSList(actions);
+
+		Gson gson = new GsonBuilder().create();
+		String json = gson.toJson(masterList);
+
+		Type mapType = new TypeToken<List<ItemLinks>>() {
+		}.getType();
+		JSONArray JSONArray = new JSONArray(masterList);
+
+		String element = new Gson().toJson(masterList,
+				new TypeToken<ArrayList<ItemLinks>>() {
+				}.getType());
+
+		// JSONObject obj = new JSONObject(element);
+
+		/*
+		 * ObjectMapper objectMapper = new ObjectMapper(); StringWriter
+		 * stringWriter = new StringWriter();
+		 * objectMapper.writeValue(stringWriter, masterList );
+		 * 
+		 * System.out.println(stringWriter); String arrayToJson =
+		 * objectMapper.writeValueAsString(masterList);
+		 */
+
+		// Using Gson, the java map is made as a json supported map to add to
+		// request object
+		// Place requests in a map // TO DO need to check real need of a map
+		// here
+
+		Map<String, JSONObject> requestJsonMap = new HashMap<String, JSONObject>();
+		// to do ***************
+		requestJsonMap.put("csItemInfoJson", requestJsonCSItemInfo);
+
+		return requestJsonMap;
+
+	}
+
 	public Map getRequestJsonMap(List<PimPojo> inputFileList) {
 		Gson gson = new Gson();
 		ResponseEntity<String> loginResponse = null;
@@ -196,7 +420,8 @@ public class FileUploadService {
 		return requestJsonMap;
 	}
 
-	public ResponseEntity getCSResponse(JSONObject json,String schema) throws Exception {
+	public ResponseEntity getCSResponse(JSONObject json, String schema)
+			throws Exception {
 		// Sending request for itemHierarchies
 		String itemJsonStr = json.toString();
 		String postUrl = null;
@@ -208,22 +433,23 @@ public class FileUploadService {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 			HttpEntity<String> entity = new HttpEntity<String>(itemJsonStr,
 					headers);
-			if(schema.equals("PUNI"))
-				postUrl = prop.getProperty("puniItemUrl"); 
-			else 
-				postUrl = prop.getProperty("pcenItemUrl"); 
+			if (schema.equals("PUNI"))
+				postUrl = prop.getProperty("puniItemUrl");
+			else
+				postUrl = prop.getProperty("pcenItemUrl");
 			// send request and parse result
-			System.out.println ("posturl"+postUrl);
-			csResponse = restTemplate.exchange(postUrl,
-					HttpMethod.POST, entity, String.class);
+			System.out.println("posturl" + postUrl);
+			csResponse = restTemplate.exchange(postUrl, HttpMethod.POST,
+					entity, String.class);
 			return csResponse;
 		} else {
 			return null;
 		}
 
 	}
-	
-	public ResponseEntity getItemInfoResponse(JSONObject json,String schema) throws Exception {
+
+	public ResponseEntity getItemInfoResponse(JSONObject json, String schema)
+			throws Exception {
 		// Sending request for itemHierarchies
 		String itemJsonStr = json.toString();
 		String postUrl = null;
@@ -235,14 +461,14 @@ public class FileUploadService {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 			HttpEntity<String> entity = new HttpEntity<String>(itemJsonStr,
 					headers);
-			if(schema.equals("PUNI"))
-				postUrl = prop.getProperty("puniItemUrl"); 
-			else 
-				postUrl = prop.getProperty("pcenItemUrl"); 
+			if (schema.equals("PUNI"))
+				postUrl = prop.getProperty("puniItemUrl");
+			else
+				postUrl = prop.getProperty("pcenItemUrl");
 			// send request and parse result
-			System.out.println ("posturl"+postUrl);
-			itemInfoResponse = restTemplate.exchange(postUrl,
-					HttpMethod.POST, entity, String.class);
+			System.out.println("posturl" + postUrl);
+			itemInfoResponse = restTemplate.exchange(postUrl, HttpMethod.POST,
+					entity, String.class);
 			return itemInfoResponse;
 		} else {
 			return null;
@@ -261,14 +487,14 @@ public class FileUploadService {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 			HttpEntity<String> entity = new HttpEntity<String>(itemJsonStr,
 					headers);
-		
-			if(schema.equals("PUNI"))
-				postUrl = prop.getProperty("puniItemGroupUrl"); 
-			else 
-				postUrl = prop.getProperty("pcenItemGroupUrl"); 
+
+			if (schema.equals("PUNI"))
+				postUrl = prop.getProperty("puniItemGroupUrl");
+			else
+				postUrl = prop.getProperty("pcenItemGroupUrl");
 			// send request and parse result
-			itemHierResponse = restTemplate.exchange(postUrl,
-					HttpMethod.POST, entity, String.class);
+			itemHierResponse = restTemplate.exchange(postUrl, HttpMethod.POST,
+					entity, String.class);
 			// String result = restTemplate.postForObject(SERVER_URI,
 			// itemJsonStr, String.class);
 			return itemHierResponse;
