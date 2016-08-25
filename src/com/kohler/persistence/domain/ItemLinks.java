@@ -1,4 +1,4 @@
-package com.probosys.fileupload.model;
+package com.kohler.persistence.domain;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -35,7 +35,7 @@ public class ItemLinks  extends Object{
 	
 	private String updatedBy="null";
 	
-	public String parent;
+	public String parent; 
 	
 	Date updatedDate = new Date();
 	private String languageCode;
@@ -45,8 +45,6 @@ public class ItemLinks  extends Object{
 	
 	List<ItemLinkTypes> csTypesList = new ArrayList();
 	
-	Map<String, List<ItemInfo>> childMap = new HashMap<>();
-
 	public Long getParentId() {
 		return parentId;
 	}

@@ -14,6 +14,10 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.kohler.persistence.domain.ItemInfo;
+
+import com.kohler.persistence.domain.ItemLinks;
+import com.kohler.persistence.domain.ItemLinkTypes;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.primefaces.model.UploadedFile;
@@ -29,9 +33,6 @@ import com.google.gson.reflect.TypeToken;
 import com.probosys.fileupload.model.Action;
 import com.probosys.fileupload.model.DataWrapper;
 import com.probosys.fileupload.model.Item;
-import com.probosys.fileupload.model.ItemInfo;
-import com.probosys.fileupload.model.ItemLinkTypes;
-import com.probosys.fileupload.model.ItemLinks;
 import com.probosys.fileupload.model.Parent;
 import com.probosys.fileupload.model.PimPojo;
 import com.probosys.fileupload.model.Schema;

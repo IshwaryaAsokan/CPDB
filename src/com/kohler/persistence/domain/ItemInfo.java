@@ -1,4 +1,4 @@
-package com.probosys.fileupload.model;
+package com.kohler.persistence.domain;
 
 import java.util.Date;
 
@@ -8,7 +8,7 @@ public class ItemInfo {
 	// Move them to one-one association from item groups POJO
 	//int itemInfoId;
 	//int parentId; 
-	
+	 
 	private String itemName;
 	private String eventId = "0";
 	private String statusId;

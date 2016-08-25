@@ -1,4 +1,4 @@
-package com.probosys.fileupload.model;
+package com.kohler.persistence.domain;
 
 
 import java.util.Date;
