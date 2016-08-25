@@ -2,10 +2,8 @@ package com.probosys.fileupload.service;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -13,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Map.Entry;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,11 +24,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.probosys.fileupload.model.Action;
 import com.probosys.fileupload.model.DataWrapper;
@@ -88,79 +81,7 @@ public class FileUploadService {
 
 		return list;
 	}
-
-	public static void main(String[] args) throws JsonGenerationException,
-			JsonMappingException, IOException {
-
-		List<PimPojo> inputFileList = new ArrayList<PimPojo>();
-		PimPojo p = new PimPojo("6955C", "1251K", "AvailableFinish", "A");
-		inputFileList.add(p);
-
-		p = new PimPojo("6955C", "1252K", "AvailableFinish", "A");
-		inputFileList.add(p);
-
-		p = new PimPojo("6955C", "1253K", "AvailableFinish", "M");
-		inputFileList.add(p);
-
-		p = new PimPojo("6959C", "456465", "PairsWellWith", "M");
-		inputFileList.add(p);
-
-		JSONObject requestJsonCSItemInfo = new JSONObject();
-
-		ItemLinks links = new ItemLinks();
-		ItemInfo info = new ItemInfo();
-		List<ItemLinks> listLinks = new ArrayList<ItemLinks>();
-		List<ItemInfo> listInfo = new ArrayList<ItemInfo>();
-
-		// The records from excel have a hierarchy of Actions -> Parents ->
-		// CrossSellingType -> Children. Sorting below based on this order
-		Comparator<PimPojo> groupByComparator = Comparator
-				.comparing(PimPojo::getAction)
-				.thenComparing(PimPojo::getParent)
-				.thenComparing(PimPojo::getCrossSellType)
-				.thenComparing(PimPojo::getChild);
-
-		inputFileList.sort(groupByComparator);
-
-		listLinks = getCSLinks(inputFileList);
-
-		// Converting list to a stream of model classes allow using collectors
-		Stream<ItemLinks> recordsCS = listLinks.stream();
-
-		// NEW RE DESIGN
-
-		Map<String, List<ItemLinks>> actions = recordsCS.collect(Collectors
-				.groupingBy(ItemLinks::getAction));
-
-		List<ItemLinks> masterList = new ArrayList<>();
-
-		Gson gson = new GsonBuilder().create();
-		String json = gson.toJson(masterList);
-
-		Type mapType = new TypeToken<List<ItemLinks>>() {
-		}.getType();
-		JSONArray JSONArray = new JSONArray(masterList);
-
-		String element = new Gson().toJson(masterList,
-				new TypeToken<ArrayList<ItemLinks>>() {
-				}.getType());
-
-		// JSONObject obj = new JSONObject(element);
-
-		ObjectMapper objectMapper = new ObjectMapper();
-		StringWriter stringWriter = new StringWriter();
-		objectMapper.writeValue(stringWriter, masterList);
-
-		System.out.println(stringWriter);
-		String arrayToJson = objectMapper.writeValueAsString(masterList);
-
-		Map<String, JSONObject> requestJsonMap = new HashMap<String, JSONObject>();
-
-		// System.out.println("Soo");
-
-	}
-
-	private List<ItemLinks> buildCSList(Map<String, List<ItemLinks>> actions){
+	private List<ItemLinks>  buildCSList(Map<String, List<ItemLinks>> actions){
 		
 		List<ItemLinks> masterList = new ArrayList<ItemLinks>();
 		
@@ -230,16 +151,14 @@ public class FileUploadService {
 		}
 		return masterList;
 	}
+	
 	public Map<String, JSONObject> getCSRequestJsonMap(
 			List<PimPojo> inputFileList) {
 
 		JSONObject requestJsonCSItemInfo = new JSONObject();
 
-		ItemLinks links = new ItemLinks();
-		ItemInfo info = new ItemInfo();
 		List<ItemLinks> listLinks = new ArrayList<ItemLinks>();
-		List<ItemInfo> listInfo = new ArrayList<ItemInfo>();
-
+	
 		// The records from excel have a hierarchy of Actions -> Parents ->
 		// CrossSellingType -> Children. Sorting below based on this order
 		Comparator<PimPojo> groupByComparator = Comparator
@@ -278,43 +197,28 @@ public class FileUploadService {
 		 */
 
 		// NEW RE DESIGN
-
+		// Get list based on action
 		Map<String, List<ItemLinks>> actions = recordsCS.collect(Collectors
 				.groupingBy(ItemLinks::getAction));
 
 		List<ItemLinks> masterList = new ArrayList<>();
 				
+		// build list of item links with item info and item link type
 		masterList = buildCSList(actions);
 
-		Gson gson = new GsonBuilder().create();
-		String json = gson.toJson(masterList);
-
-		Type mapType = new TypeToken<List<ItemLinks>>() {
-		}.getType();
-		JSONArray JSONArray = new JSONArray(masterList);
-
-		String element = new Gson().toJson(masterList,
-				new TypeToken<ArrayList<ItemLinks>>() {
-				}.getType());
-
-		// JSONObject obj = new JSONObject(element);
-
-		/*
-		 * ObjectMapper objectMapper = new ObjectMapper(); StringWriter
-		 * stringWriter = new StringWriter();
-		 * objectMapper.writeValue(stringWriter, masterList );
-		 * 
-		 * System.out.println(stringWriter); String arrayToJson =
-		 * objectMapper.writeValueAsString(masterList);
-		 */
-
-		// Using Gson, the java map is made as a json supported map to add to
-		// request object
-		// Place requests in a map // TO DO need to check real need of a map
-		// here
-
+		Type type = new TypeToken<List<ItemLinks>>(){}.getType();
+		String json = new Gson().toJson(masterList, type);
+		
+		//array of json object of item links
+		JSONArray array = new JSONArray(json);
+		
 		Map<String, JSONObject> requestJsonMap = new HashMap<String, JSONObject>();
-		// to do ***************
+
+		// place request
+		requestJsonCSItemInfo.append(
+				  "request", (array));
+		
+		
 		requestJsonMap.put("csItemInfoJson", requestJsonCSItemInfo);
 
 		return requestJsonMap;
