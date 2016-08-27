@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-
 public class CrossSell implements Jsonable {
 	private String id;
 	private String name;
@@ -23,18 +22,22 @@ public class CrossSell implements Jsonable {
 		items.add(new Item(id + "IT1", name + "ITEM1"));
 		items.add(new Item(id + "IT2", name + "ITEM2"));
 
-	} 
- 
+	}
+
 	public CrossSell() {
 		// TODO Auto-generated constructor stub
 	}
 
 	public void populate(JsonNode node) {
-		ObjectNode oNode = (ObjectNode) node;
-		ArrayNode itemsCont = Json.newArray();
-		oNode.set(name, itemsCont);
-		for (Item item : items) {
-			item.populate(itemsCont);
+		try {
+			ObjectNode oNode = (ObjectNode) node;
+			ArrayNode itemsCont = Json.newArray();
+			oNode.set(name, itemsCont);
+			for (Item item : items) {
+				item.populate(itemsCont);
+			}
+		} catch (Exception e) {
+			System.out.println("CS exce " + e.getMessage());
 		}
 	}
 

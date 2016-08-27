@@ -16,11 +16,11 @@ public class Action implements Jsonable {
 	public Action(ActionType action) {
 		this.action = action;
 		products = new ArrayList<Product>();
-		/*products.add(new Product("P1", "SAMPLE1"));
-		products.add(new Product("P2", "SAMPLE2"));
-	*/}
+		/*
+		 * products.add(new Product("P1", "SAMPLE1")); products.add(new
+		 * Product("P2", "SAMPLE2"));
+		 */}
 
-	 
 	public Action() {
 		// TODO Auto-generated constructor stub
 	}
@@ -34,13 +34,19 @@ public class Action implements Jsonable {
 	}
 
 	public void populate(JsonNode node) {
-		ObjectNode oNode = (ObjectNode) node;
 
-		ObjectNode prods = Json.newObject();
-		oNode.set(action.getAction(), prods);
-		for (Product product : products) {
-			product.populate(prods);
+		try {
+			ObjectNode oNode = (ObjectNode) node;
+
+			ObjectNode prods = Json.newObject();
+			oNode.set(action.getAction(), prods);
+			for (Product product : products) {
+				product.populate(prods);
+			}
+		} catch (Exception e) {
+			System.out.println("Äction Exce" + e.getMessage());
 		}
+
 	}
 
 	public void constructFrom(JsonNode node) {
@@ -68,7 +74,7 @@ public class Action implements Jsonable {
 				product.constructFrom(newPNode);
 			}
 
-		} 
+		}
 
 	}
 
@@ -77,15 +83,12 @@ public class Action implements Jsonable {
 		return false;
 	}
 
-
 	public ActionType getAction() {
 		return action;
 	}
-
 
 	public void setAction(ActionType action) {
 		this.action = action;
 	}
 
 }
-

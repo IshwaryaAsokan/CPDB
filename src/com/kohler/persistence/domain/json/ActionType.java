@@ -4,10 +4,10 @@ public enum ActionType {
 
 	ADD {
 		public String getAction() {
-			return "Add";
+			return "ADD";
 		}
 	},
-	MODIFY { 
+	MODIFY {
 		public String getAction() {
 			return "MODIFY";
 		}
@@ -21,13 +21,13 @@ public enum ActionType {
 
 	public static ActionType getType(String action) {
 		ActionType actionType = ADD;
-		if ("MODIFY".equalsIgnoreCase(action)) {
+		if ("M".equalsIgnoreCase(action)) {
 			actionType = MODIFY;
 		}
-		if ("DELETE".equalsIgnoreCase(action)) {
+		if ("D".equalsIgnoreCase(action)) {
 			actionType = DELETE;
 		}
-		if ("ADD".equalsIgnoreCase(action)) {
+		if ("A".equalsIgnoreCase(action)) {
 			actionType = ADD;
 		}
 		return actionType;

@@ -16,9 +16,15 @@ public class Item implements Jsonable {
 	}
 
 	public void populate(JsonNode node) {
+	try{
 		ArrayNode aNode = (ArrayNode) node;
 		aNode.add(name);
+		
 	}
+	catch(Exception e)
+	{
+	System.out.println("Item Exce" + e.getMessage());	
+	}}
 
 	public void constructFrom(JsonNode node) {
 		name = node.asText();

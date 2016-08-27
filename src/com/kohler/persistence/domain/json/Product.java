@@ -18,25 +18,29 @@ public class Product implements Jsonable {
 	public Product(String id, String name) {
 		this.id = id;
 		this.name = name;
-		/*list = new ArrayList<CrossSell>();
-		list.add(new CrossSell(id + "1", name + "CS1"));
-		list.add(new CrossSell(id + "2", name + "CS2"));
-	*/}
+		/*
+		 * list = new ArrayList<CrossSell>(); list.add(new CrossSell(id + "1",
+		 * name + "CS1")); list.add(new CrossSell(id + "2", name + "CS2"));
+		 */}
 
 	public Product() {
 		// TODO Auto-generated constructor stub
 	}
 
 	public void populate(JsonNode node) {
-		ObjectNode oNode = (ObjectNode) node;
-		ObjectNode csContainer = Json.newObject();
-		ObjectNode cs = Json.newObject();
+		try {
+			ObjectNode oNode = (ObjectNode) node;
+			ObjectNode csContainer = Json.newObject();
+			ObjectNode cs = Json.newObject();
 
-		oNode.set(name, csContainer);
+			oNode.set(name, csContainer);
 
-		csContainer.set("crossSelling", cs);
-		for (CrossSell crossSell : list) {
-			crossSell.populate(cs);
+			csContainer.set("crossSelling", cs);
+			for (CrossSell crossSell : list) {
+				crossSell.populate(cs);
+			}
+		} catch (Exception e) {
+			System.out.println("Prod " + e.getMessage());
 		}
 	}
 
@@ -82,7 +86,7 @@ public class Product implements Jsonable {
 	public void setList(List<CrossSell> list) {
 		this.list = list;
 	}
- 
+
 	public String getName() {
 		return name;
 	}

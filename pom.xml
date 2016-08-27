@@ -12,17 +12,55 @@
 			<artifactId>primefaces</artifactId>
 			<version>5.3</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.typesafe.play/play-json_2.10 -->
 		<dependency>
-	<groupId>com.fasterxml.jackson.core</groupId> 
-	<artifactId>jackson-databind</artifactId>
-	<version>2.7.1</version> 
-</dependency>
+			<groupId>com.typesafe.play</groupId>
+			<artifactId>play-json_2.10</artifactId>
+			<version>2.4.0-M1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.typesafe.play</groupId>
+			<artifactId>play-datacommons_2.10</artifactId>
+			<version>2.4.0-M1</version>
+		</dependency>
+			<dependency>
+			<groupId>com.typesafe.play</groupId>
+			<artifactId>play-functional_2.10</artifactId>
+			<version>2.4.0-M1</version>
+		</dependency>
+			<dependency>
+			<groupId>com.typesafe.play</groupId>
+			<artifactId>play-iteratees_2.10</artifactId>
+			<version>2.4.0-M1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.typesafe.play</groupId>
+			<artifactId>play-json_2.10</artifactId>
+			<version>2.4.0-M1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>2.4.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.4.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>2.4.0</version>
+		</dependency>
 		<dependency>
 			<groupId>org.primefaces.extensions</groupId>
 			<artifactId>primefaces-extensions</artifactId>
 			<version>4.0.0</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-aop</artifactId>

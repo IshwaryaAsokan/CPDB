@@ -13,7 +13,6 @@ import com.kohler.persistence.domain.json.Action;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
-
 public class Schema implements Jsonable {
 	private String id;
 	private String name;
@@ -22,21 +21,26 @@ public class Schema implements Jsonable {
 	public Schema(String schemaName) {
 		this.name = schemaName;
 		actions = new ArrayList<Action>();
-		/*actions.add(new Action(ActionType.ADD));
-		actions.add(new Action(ActionType.DELETE));
-		actions.add(new Action(ActionType.MODIFY));
-	*/} 
+		/*
+		 * actions.add(new Action(ActionType.ADD)); actions.add(new
+		 * Action(ActionType.DELETE)); actions.add(new
+		 * Action(ActionType.MODIFY));
+		 */}
 
 	public Schema() {
 		// TODO Auto-generated constructor stub
 	}
 
 	public void populate(JsonNode node) {
-		ObjectNode oNode = (ObjectNode) node;
-		ObjectNode schemaContainer = Json.newObject();
-		oNode.set(name, schemaContainer);
-		for (Action action : actions) {
-			action.populate(schemaContainer);
+		try {
+			ObjectNode oNode = (ObjectNode) node;
+			ObjectNode schemaContainer = Json.newObject();
+			oNode.set(name, schemaContainer);
+			for (Action action : actions) {
+				action.populate(schemaContainer);
+			}
+		} catch (Exception e) {
+			System.out.println("Exception populate >>> " + e.getMessage());
 		}
 	}
 
@@ -82,7 +86,5 @@ public class Schema implements Jsonable {
 	public void setActions(List<Action> actions) {
 		this.actions = actions;
 	}
-	
-	
 
 }
