@@ -16,8 +16,10 @@ import org.json.JSONObject;
 import org.primefaces.model.UploadedFile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
+
 import com.probosys.file.utils.FileUtils;
-import com.probosys.fileupload.model.Item;
+import com.kohler.persistence.domain.json.Item;
+import com.probosys.fileupload.model.FileItem;
 import com.probosys.fileupload.model.PimPojo;
 import com.probosys.fileupload.service.FileUploadService;
 
@@ -32,12 +34,12 @@ public class FileUploadView {
 
 	private String uploadType;
 
-	private List<Item> items = new ArrayList<Item>();
+	private List<FileItem> items = new ArrayList<FileItem>();
 
 	@PostConstruct
 	public void init() {
-		items = getSessionMap().get("itemsValue") != null ? (List<Item>) getSessionMap()
-				.get("itemsValue") : new ArrayList<Item>();
+		items = getSessionMap().get("itemsValue") != null ? (List<FileItem>) getSessionMap()
+				.get("itemsValue") : new ArrayList<FileItem>();
 	}
 
 	public void upload() {
@@ -47,7 +49,7 @@ public class FileUploadView {
 				message = new FacesMessage("Succesful", file.getFileName()
 						+ " is uploaded.");
 				List<PimPojo> inpItems = new ArrayList<PimPojo>();
-								items = new ArrayList<Item>();
+								items = new ArrayList<FileItem>();
 				ResponseEntity<?> csResponse = null;
 				FileUploadService fileUploadService = new FileUploadService();
 				ResponseEntity<?> response2 = null;
@@ -94,7 +96,7 @@ public class FileUploadView {
 			
 					}
 					jsonValue = (String) csResponse.toString();
-					Collections.sort(items, Item.statusComparator);
+					Collections.sort(items, FileItem.statusComparator);
 
 					getSessionMap().put("itemsValue", items);
 
@@ -152,11 +154,11 @@ public class FileUploadView {
 		this.jsonValue = jsonValue;
 	}
 
-	public List<Item> getItems() {
+	public List<FileItem> getItems() {
 		return items;
 	}
 
-	public void setItems(List<Item> items) {
+	public void setItems(List<FileItem> items) {
 		this.items = items;
 	}
 	

@@ -15,9 +15,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.kohler.persistence.domain.ItemInfo;
-
 import com.kohler.persistence.domain.ItemLinks;
 import com.kohler.persistence.domain.ItemLinkTypes;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.primefaces.model.UploadedFile;
@@ -30,12 +30,9 @@ import org.springframework.web.client.RestTemplate;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.probosys.fileupload.model.Action;
-import com.probosys.fileupload.model.DataWrapper;
-import com.probosys.fileupload.model.Item;
-import com.probosys.fileupload.model.Parent;
+import com.probosys.fileupload.model.FileItem;
 import com.probosys.fileupload.model.PimPojo;
-import com.probosys.fileupload.model.Schema;
+import com.kohler.persistence.domain.json.*;
 
 public class FileUploadService {
 	final String SERVER_URI = "http://localhost:8180/persistence-0.1/pim/postItems/PUNI";
@@ -82,10 +79,11 @@ public class FileUploadService {
 
 		return list;
 	}
-	private List<ItemLinks>  buildCSList(Map<String, List<ItemLinks>> actions){
-		
+
+	private List<ItemLinks> buildCSList(Map<String, List<ItemLinks>> actions) {
+
 		List<ItemLinks> masterList = new ArrayList<ItemLinks>();
-		
+
 		List<ItemLinks> parentsList = new ArrayList<>();
 		List<ItemLinks> csList = new ArrayList<>();
 
@@ -152,14 +150,14 @@ public class FileUploadService {
 		}
 		return masterList;
 	}
-	
+
 	public Map<String, JSONObject> getCSRequestJsonMap(
 			List<PimPojo> inputFileList) {
 
 		JSONObject requestJsonCSItemInfo = new JSONObject();
 
 		List<ItemLinks> listLinks = new ArrayList<ItemLinks>();
-	
+
 		// The records from excel have a hierarchy of Actions -> Parents ->
 		// CrossSellingType -> Children. Sorting below based on this order
 		Comparator<PimPojo> groupByComparator = Comparator
@@ -175,6 +173,15 @@ public class FileUploadService {
 		// Converting list to a stream of model classes allow using collectors
 		Stream<ItemLinks> recordsCS = listLinks.stream();
 
+		Map<String, Map<String, Map<List<ItemLinkTypes>, List<ItemLinks>>>> map = recordsCS.collect(Collectors.groupingBy(ItemLinks::getAction
+																	, Collectors.groupingBy(ItemLinks::getParent ,
+																			Collectors.groupingBy(ItemLinks::getCsTypesList))));
+		
+																			
+		/*																			, Collectors.mapping(
+										ItemLinkTypes::getItemInfoList,
+										Collectors.toList())))));
+*/
 		// OLD DESIGN
 		/*
 		 * Stream<PimPojo> records = inputFileList.stream();
@@ -203,23 +210,22 @@ public class FileUploadService {
 				.groupingBy(ItemLinks::getAction));
 
 		List<ItemLinks> masterList = new ArrayList<>();
-				
+
 		// build list of item links with item info and item link type
 		masterList = buildCSList(actions);
 
-		Type type = new TypeToken<List<ItemLinks>>(){}.getType();
+		Type type = new TypeToken<List<ItemLinks>>() {
+		}.getType();
 		String json = new Gson().toJson(masterList, type);
-		
-		//array of json object of item links
+
+		// array of json object of item links
 		JSONArray array = new JSONArray(json);
-		
+
 		Map<String, JSONObject> requestJsonMap = new HashMap<String, JSONObject>();
 
 		// place request
-		requestJsonCSItemInfo.append(
-				  "request", (array));
-		
-		
+		requestJsonCSItemInfo.append("request", (array));
+
 		requestJsonMap.put("csItemInfoJson", requestJsonCSItemInfo);
 
 		return requestJsonMap;
@@ -234,9 +240,9 @@ public class FileUploadService {
 		List<PimPojo> pojos = null;
 		JSONObject itemInfoOutputJson = null, itemHierOutputJson = null, ancestorJson = null, parentJsonItemInfo = null, parentJsonItemHier = null, requestJsonItemInfo = null, requestJsonItemHier = null;
 
-		Map<String, Parent> actionMap = new HashMap<>();
+/*		Map<String, Parent> actionMap = new HashMap<>();
 		Parent parent = new Parent();
-		parentJsonItemInfo = new JSONObject();
+		*/parentJsonItemInfo = new JSONObject();
 		int count = 0;
 		parentJsonItemHier = new JSONObject();
 
@@ -276,9 +282,9 @@ public class FileUploadService {
 			String parentKey = parentMap.getKey();
 
 			ancestorJson = new JSONObject();
-			parent.setPimPojo(parentMap.getValue());
+		/*	parent.setPimPojo(parentMap.getValue());
 			actionMap.put(parentMap.getKey(), parent);
-			if (parentKey != "NULL") {
+		*/	if (parentKey != "NULL") {
 				List<PimPojo> childrenList = parentMap.getValue();
 
 				count++;
@@ -306,9 +312,9 @@ public class FileUploadService {
 		requestJsonItemHier = new JSONObject().put("request",
 				(new JSONObject().accumulate("M", parentJsonItemHier)));
 
-		action.setParents(actionMap);
+		//action.setParents(actionMap);
 
-		Schema schema = new Schema();
+		/*Schema schema = new Schema();
 		Map<String, Action> schemaMap = new HashMap<>();
 		schemaMap.put("M", action);
 		schema.setActions(schemaMap);
@@ -317,7 +323,7 @@ public class FileUploadService {
 		Map<String, Schema> datWrapMap = new HashMap<>();
 		datWrapMap.put(schemaName, schema);
 		datWrapper.setSchemas(datWrapMap);
-
+*/
 		Map<String, JSONObject> requestJsonMap = new HashMap<String, JSONObject>();
 		requestJsonMap.put("itemInfoJson", requestJsonItemInfo);
 		requestJsonMap.put("itemHierJson", requestJsonItemHier);
@@ -409,15 +415,15 @@ public class FileUploadService {
 
 	}
 
-	public List<Item> parseItemInfoJson(String response) {
+	public List<FileItem> parseItemInfoJson(String response) {
 		// TODO Auto-generated method stub
 
 		JSONObject jsonObj = new JSONObject(response.trim());
 		JSONObject responseJsonObj = jsonObj.getJSONObject("response");
 		JSONObject outputJSON = new JSONObject();
 		JSONObject ancestorOutputJSON = null, parentOutputJson = null, childOutputJSON = null, actionOutputJSON = null;
-		Item itemObj = null;
-		List<Item> itemsList = new ArrayList();
+		FileItem itemObj = null;
+		List<FileItem> itemsList = new ArrayList();
 
 		try {
 			for (Iterator keys = responseJsonObj.keys(); keys.hasNext();) {
@@ -437,7 +443,7 @@ public class FileUploadService {
 					ancestorOutputJSON = new JSONObject();
 					childOutputJSON = new JSONObject();
 
-					itemObj = new Item();
+					itemObj = new FileItem();
 					itemObj.setParentId("");
 
 					itemObj.setItemName(parentJSON.get("itemNo").toString());
@@ -461,15 +467,15 @@ public class FileUploadService {
 		return itemsList;
 	}
 
-	public List<Item> parseItemHierJSON(String response) {
+	public List<FileItem> parseItemHierJSON(String response) {
 		// TODO Auto-generated method stub
 
 		JSONObject jsonObj = new JSONObject(response.trim());
 		JSONObject responseJsonObj = jsonObj.getJSONObject("response");
 		JSONObject outputJSON = new JSONObject();
 		JSONObject ancestorOutputJSON = null, parentOutputJson = null, childOutputJSON = null, actionOutputJSON = null, parentJSON = null;
-		Item itemObj = null;
-		List<Item> itemsList = new ArrayList();
+		FileItem itemObj = null;
+		List<FileItem> itemsList = new ArrayList();
 
 		try {
 			for (Iterator keys = responseJsonObj.keys(); keys.hasNext();) {
@@ -494,7 +500,7 @@ public class FileUploadService {
 						String childKeyValue = (String) childKey.next();
 						JSONObject thisObj = ancestorJSON
 								.getJSONObject(childKeyValue);
-						itemObj = new Item();
+						itemObj = new FileItem();
 						itemObj.setParentId(parentId);
 
 						itemObj.setItemName(childKeyValue);
