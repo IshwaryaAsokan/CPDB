@@ -76,76 +76,6 @@ public class FileUploadService {
 		}
 	}
 
-	private List<ItemLinks> buildCSList(Map<String, List<ItemLinks>> actions) {
-
-		List<ItemLinks> masterList = new ArrayList<ItemLinks>();
-
-		List<ItemLinks> parentsList = new ArrayList<>();
-		List<ItemLinks> csList = new ArrayList<>();
-
-		ItemLinks itemObj = new ItemLinks();
-		ItemInfo ii = new ItemInfo();
-
-		for (String aItr : actions.keySet()) {
-
-			parentsList = actions.get(aItr);
-			Map<String, List<ItemLinks>> parents = parentsList.stream()
-					.collect(Collectors.groupingBy(ItemLinks::getParent));
-
-			for (String pItr : parents.keySet()) {
-
-				csList = parents.get(pItr);
-				Map<String, Map<String, List<ItemLinks>>> parentsFinalMap = csList
-						.stream()
-						.collect(
-								Collectors
-										.groupingBy(
-												ItemLinks::getParent,
-												Collectors
-														.groupingBy(ItemLinks::getCrossSellType)));
-
-				for (String cItr : parentsFinalMap.keySet()) {
-
-					itemObj = new ItemLinks();
-					System.out.println(cItr);
-
-					itemObj.setParent(cItr);
-					Map<String, List<ItemLinks>> csKeyMap = parentsFinalMap
-							.get(cItr);
-
-					// itemObj.setAction(csK);
-					List<ItemInfo> iiList = new ArrayList<ItemInfo>();
-					List<ItemLinkTypes> iltList = new ArrayList<>();
-
-					for (String childItr : csKeyMap.keySet()) {
-						ii = new ItemInfo();
-
-						List<ItemLinks> childList = csKeyMap.get(childItr);
-						ItemLinkTypes csType = new ItemLinkTypes();
-
-						csType.setItemLinkType(childItr);
-
-						for (ItemLinks ilink : childList) {
-
-							ii = new ItemInfo();
-							ii.setItemName(ilink.getItemLinkText());
-							iiList.add(ii);
-						}
-
-						itemObj.setAction(childList.get(0).getAction());
-
-						csType.setItemInfoList(iiList);
-						iltList.add(csType);
-
-					}
-					itemObj.setCsTypesList(iltList);
-					masterList.add(itemObj);
-
-				}
-			}
-		}
-		return masterList;
-	}
 
 	private Schema buildCSSchema(Map<String, Map<String, List<PimPojo>>> map) {
 
@@ -257,32 +187,6 @@ public class FileUploadService {
 						Collectors.groupingBy(PimPojo::getParent)));
 
 		Schema schema = buildCSSchema(map);
-		/*
-		 * , Collectors.mapping( ItemLinkTypes::getItemInfoList,
-		 * Collectors.toList())))));
-		 */
-		// OLD DESIGN
-		/*
-		 * Stream<PimPojo> records = inputFileList.stream();
-		 * 
-		 * // Collectors groupingby generates a complex nested map based on the
-		 * // provided JSON schema Map<String, Map<String, Map<String,
-		 * List<String>>>> map = records
-		 * .collect(Collectors.groupingBy(PimPojo::getAction, Collectors
-		 * .groupingBy(PimPojo::getParent, Collectors.groupingBy(
-		 * PimPojo::getCrossSellType, Collectors.mapping( PimPojo::childValue,
-		 * Collectors.toList())))));
-		 * 
-		 * Map<String, Object> actions = new Gson().fromJson( new
-		 * JSONObject(map).toString(), HashMap.class);
-		 * 
-		 * // Build request json for all actions A,M,D // 3 action maps are
-		 * appended to json obj - requestJsonCSItemInfo for (Entry<String,
-		 * Object> itr : actions.entrySet()) { requestJsonCSItemInfo.append(
-		 * "request", (new JSONObject().accumulate(itr.getKey(),
-		 * actions.get(itr.getKey())))); }
-		 */
-
 		// NEW RE DESIGN
 		/*
 		 * // Get list based on action Map<String, List<ItemLinks>> actions =
@@ -410,17 +314,6 @@ public class FileUploadService {
 		requestJsonItemHier = new JSONObject().put("request",
 				(new JSONObject().accumulate("M", parentJsonItemHier)));
 
-		// action.setParents(actionMap);
-
-		/*
-		 * Schema schema = new Schema(); Map<String, Action> schemaMap = new
-		 * HashMap<>(); schemaMap.put("M", action);
-		 * schema.setActions(schemaMap);
-		 * 
-		 * DataWrapper datWrapper = new DataWrapper(); Map<String, Schema>
-		 * datWrapMap = new HashMap<>(); datWrapMap.put(schemaName, schema);
-		 * datWrapper.setSchemas(datWrapMap);
-		 */
 		Map<String, JSONObject> requestJsonMap = new HashMap<String, JSONObject>();
 		requestJsonMap.put("itemInfoJson", requestJsonItemInfo);
 		requestJsonMap.put("itemHierJson", requestJsonItemHier);
