@@ -442,9 +442,9 @@ public class FileUploadService {
 			HttpEntity<String> entity = new HttpEntity<String>(itemJsonStr,
 					headers);
 			if (schema.equals("PUNI"))
-				postUrl = prop.getProperty("puniItemUrl");
+				postUrl = prop.getProperty("puniCSUrl");
 			else
-				postUrl = prop.getProperty("pcenItemUrl");
+				postUrl = prop.getProperty("pcenCSUrl");
 			// send request and parse result
 			System.out.println("posturl" + postUrl);
 			csResponse = restTemplate.exchange(postUrl, HttpMethod.POST,
